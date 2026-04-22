@@ -1,0 +1,125 @@
+export interface Asset {
+  id: string;
+  symbol: string;
+  name: string;
+  price: number;
+  change24h: number;
+  marketCap: number;
+  volume24h: number;
+  color: string;
+  sparkline: { time: string; value: number }[];
+  trend?: 'RANDOM' | 'PUMP' | 'DUMP' | 'STABLE';
+}
+
+export interface PortfolioItem {
+  assetId: string;
+  amount: number;
+  avgPrice: number;
+}
+
+export const MOCK_ASSETS: Asset[] = [
+  {
+    id: 'eurusd',
+    symbol: 'EUR/USD',
+    name: 'Euro / US Dollar',
+    price: 1.0842,
+    change24h: 0.12,
+    marketCap: 0,
+    volume24h: 6000000000,
+    color: '#3B82F6',
+    sparkline: Array.from({ length: 40 }, (_, i) => ({ time: i.toString(), value: 1.08 + Math.random() * 0.01 }))
+  },
+  {
+    id: 'gbpjusd',
+    symbol: 'GBP/USD',
+    name: 'British Pound / US Dollar',
+    price: 1.2654,
+    change24h: -0.08,
+    marketCap: 0,
+    volume24h: 4000000000,
+    color: '#10B981',
+    sparkline: Array.from({ length: 40 }, (_, i) => ({ time: i.toString(), value: 1.26 + Math.random() * 0.01 }))
+  },
+  {
+    id: 'usdjpy',
+    symbol: 'USD/JPY',
+    name: 'US Dollar / Japanese Yen',
+    price: 151.42,
+    change24h: 0.45,
+    marketCap: 0,
+    volume24h: 5000000000,
+    color: '#F43F5E',
+    sparkline: Array.from({ length: 40 }, (_, i) => ({ time: i.toString(), value: 150 + Math.random() * 2 }))
+  },
+  {
+    id: 'xauusd',
+    symbol: 'GOLD',
+    name: 'Gold / US Dollar',
+    price: 2342.15,
+    change24h: 1.24,
+    marketCap: 0,
+    volume24h: 8000000000,
+    color: '#EAB308',
+    sparkline: Array.from({ length: 40 }, (_, i) => ({ time: i.toString(), value: 2300 + Math.random() * 60 }))
+  },
+  {
+    id: 'btcusd',
+    symbol: 'BTC/USD',
+    name: 'Bitcoin / US Dollar',
+    price: 64231.50,
+    change24h: 2.45,
+    marketCap: 0,
+    volume24h: 35000000000,
+    color: '#F97316',
+    sparkline: Array.from({ length: 40 }, (_, i) => ({ time: i.toString(), value: 62000 + Math.random() * 4000 }))
+  }
+];
+
+export interface Trade {
+  id: string;
+  symbol: string;
+  type: 'BUY' | 'SELL';
+  lot: number;
+  openPrice: number;
+  closePrice?: number;
+  profit: number;
+  time: string;
+  status: 'OPEN' | 'CLOSED';
+}
+
+export const MOCK_USER = {
+  name: 'Alex Rivera',
+  avatar: 'https://images.unsplash.com/photo-1535713875002-d1d0cf377fde?w=128&h=128&fit=crop&crop=faces',
+  balance: 10450.75,
+  equity: 12150.25,
+  margin: 1200.00,
+  freeMargin: 9250.75,
+  marginLevel: 850,
+  isAdmin: true,
+  portfolio: [
+    { assetId: 'eurusd', amount: 10.5, avgPrice: 1.0820 },
+    { assetId: 'xauusd', amount: 0.5, avgPrice: 2310.00 },
+  ],
+  trades: [
+    { id: 't1', symbol: 'EUR/USD', type: 'BUY', lot: 1.0, openPrice: 1.0820, profit: 220.50, time: '2024-04-21 14:20', status: 'OPEN' },
+    { id: 't2', symbol: 'GOLD', type: 'SELL', lot: 0.1, openPrice: 2355.10, profit: 1295.40, time: '2024-04-21 16:45', status: 'OPEN' },
+    { id: 't3', symbol: 'USD/JPY', type: 'BUY', lot: 0.5, openPrice: 151.10, closePrice: 151.42, profit: 160.00, time: '2024-04-20 09:12', status: 'CLOSED' },
+    { id: 't4', symbol: 'GBP/USD', type: 'SELL', lot: 2.0, openPrice: 1.2670, closePrice: 1.2654, profit: 320.00, time: '2024-04-19 22:30', status: 'CLOSED' },
+  ] as Trade[]
+};
+
+export const MOCK_PLATFORM_USERS = [
+  { id: 'u1', name: 'Alex Rivera', email: 'alex@zenith.trade', balance: 10450.75, status: 'Active', verified: true, joined: '2024-01-12' },
+  { id: 'u2', name: 'Sarah Jenkins', email: 'sarah.j@gmail.com', balance: 42500.00, status: 'Active', verified: true, joined: '2024-02-05' },
+  { id: 'u3', name: 'Michael Chen', email: 'm.chen@outlook.com', balance: 1200.50, status: 'Pending', verified: false, joined: '2024-04-18' },
+  { id: 'u4', name: 'Elena Rodriguez', email: 'elena.rod@yahoo.com', balance: 8900.25, status: 'Active', verified: true, joined: '2023-11-30' },
+  { id: 'u5', name: 'David Smith', email: 'd.smith@proton.me', balance: 0.00, status: 'Suspended', verified: true, joined: '2023-09-15' },
+];
+
+export const MOCK_PLATFORM_STATS = {
+  totalVolume: '$4.2B',
+  activeTraders: 12450,
+  serverLoad: '12%',
+  uptime: '99.99%',
+  revenue24h: '$1.2M'
+};
