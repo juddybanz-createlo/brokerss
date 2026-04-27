@@ -4,7 +4,7 @@ import { Hexagon, Mail, Lock, User, ArrowRight, Github, Phone, Globe, Gift, Chec
 import { cn } from '../lib/utils';
 import { ApiService } from '../services/apiService';
 
-export default function AuthPage({ onLogin }: { onLogin: (data: { name?: string, email: string, isRegistration: boolean, bonusClaimed?: boolean }) => void }) {
+export default function AuthPage({ onLogin }: { onLogin: (data: { name?: string, email: string, isRegistration: boolean, bonusClaimed?: boolean, user?: any }) => void }) {
   const [isLogin, setIsLogin] = useState(true);
   const [loading, setLoading] = useState(false);
   const [showBonusPopup, setShowBonusPopup] = useState(false);
@@ -27,7 +27,7 @@ export default function AuthPage({ onLogin }: { onLogin: (data: { name?: string,
         } else {
             const data = await ApiService.login(email);
             ApiService.setSession(data.sessionId);
-            onLogin({ email: data.user.email, isRegistration: false });
+            onLogin({ email: data.user.email, isRegistration: false, user: data.user });
         }
     } catch (err: any) {
         alert(err.message || "Security protocol failure");
@@ -41,7 +41,7 @@ export default function AuthPage({ onLogin }: { onLogin: (data: { name?: string,
     try {
         await ApiService.claimBonus();
         setShowBonusPopup(false);
-        onLogin({ name: tempUserData.name, email: tempUserData.email, isRegistration: true, bonusClaimed: true });
+        onLogin({ name: tempUserData.name, email: tempUserData.email, isRegistration: true, bonusClaimed: true, user: tempUserData });
     } catch (err: any) {
         alert("Bonus extraction failed: " + err.message);
     } finally {

@@ -148,34 +148,28 @@ export interface Trade {
 }
 
 export const MOCK_USER = {
-  id: 'u1',
-  name: 'Alex Rivera',
+  id: 'OPERATOR_0',
+  name: 'Juddy Banz',
   avatar: 'https://images.unsplash.com/photo-1535713875002-d1d0cf377fde?w=128&h=128&fit=crop&crop=faces',
-  balance: 10450.75,
-  equity: 12150.25,
-  margin: 1200.00,
-  freeMargin: 9250.75,
-  marginLevel: 850,
+  balance: 50000.00,
+  equity: 50000.00,
+  margin: 0,
+  freeMargin: 50000.00,
+  marginLevel: 0,
   isAdmin: true,
   cards: [] as { id: string; brand: string; last4: string; expiry: string; }[],
   portfolio: [
-    { assetId: 'eurusd', amount: 10.5, avgPrice: 1.0820 },
-    { assetId: 'xauusd', amount: 0.5, avgPrice: 2310.00 },
+    { assetId: 'eurusd', amount: 0, avgPrice: 0 },
   ],
-  trades: [
-    { id: 't1', symbol: 'EUR/USD', type: 'BUY', lot: 1.0, openPrice: 1.0820, profit: 220.50, time: '2024-04-21 14:20', status: 'OPEN' },
-    { id: 't2', symbol: 'GOLD', type: 'SELL', lot: 0.1, openPrice: 2355.10, profit: 1295.40, time: '2024-04-21 16:45', status: 'OPEN' },
-    { id: 't3', symbol: 'USD/JPY', type: 'BUY', lot: 0.5, openPrice: 151.10, closePrice: 151.42, profit: 160.00, time: '2024-04-20 09:12', status: 'CLOSED' },
-    { id: 't4', symbol: 'GBP/USD', type: 'SELL', lot: 2.0, openPrice: 1.2670, closePrice: 1.2654, profit: 320.00, time: '2024-04-19 22:30', status: 'CLOSED' },
-  ] as Trade[]
+  trades: [] as Trade[]
 };
 
 export const MOCK_PLATFORM_USERS = [
-  { id: 'u1', name: 'Alex Rivera', email: 'alex@apex.financial', balance: 10450.75, status: 'Active', verified: true, joined: '2024-01-12' },
-  { id: 'u2', name: 'Sarah Jenkins', email: 'sarah.j@gmail.com', balance: 42500.00, status: 'Active', verified: true, joined: '2024-02-05' },
-  { id: 'u3', name: 'Michael Chen', email: 'm.chen@outlook.com', balance: 1200.50, status: 'Pending', verified: false, joined: '2024-04-18' },
-  { id: 'u4', name: 'Elena Rodriguez', email: 'elena.rod@yahoo.com', balance: 8900.25, status: 'Active', verified: true, joined: '2023-11-30' },
-  { id: 'u5', name: 'David Smith', email: 'd.smith@proton.me', balance: 0.00, status: 'Suspended', verified: true, joined: '2023-09-15' },
+  { id: 'ADMIN_CHIEF', name: 'Alex Rivera', email: 'alex@apex.financial', balance: 10450.75, status: 'Active', verified: true, joined: '2024-01-12' },
+  { id: 'usr_2', name: 'Sarah Jenkins', email: 'sarah.j@gmail.com', balance: 42500.00, status: 'Active', verified: true, joined: '2024-02-05' },
+  { id: 'usr_3', name: 'Michael Chen', email: 'm.chen@outlook.com', balance: 1200.50, status: 'Pending', verified: false, joined: '2024-04-18' },
+  { id: 'usr_4', name: 'Elena Rodriguez', email: 'elena.rod@yahoo.com', balance: 8900.25, status: 'Active', verified: true, joined: '2023-11-30' },
+  { id: 'usr_5', name: 'David Smith', email: 'd.smith@proton.me', balance: 0.00, status: 'Suspended', verified: true, joined: '2023-09-15' },
 ];
 
 export const MOCK_PLATFORM_STATS = {

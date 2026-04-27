@@ -65,35 +65,33 @@ const CandleStick = (props: any) => {
   if (!payload || height === undefined) return null;
   
   const isUp = payload.close >= payload.open;
-  // Professional trading colors (Vibrant Emerald / Bright Rose)
-  const color = isUp ? '#10b981' : '#f43f5e'; 
+  // Professional trading colors (High Contrast Emerald / High Contrast Ruby)
+  const color = isUp ? '#22c55e' : '#ef4444'; 
   
-  const priceRange = Math.abs(payload.close - payload.open);
-  const bodyHeight = Math.max(2, height);
-  const ratio = bodyHeight / Math.max(0.000001, priceRange);
-  
-  const highWickHeight = (payload.high - Math.max(payload.open, payload.close)) * ratio;
-  const lowWickHeight = (Math.min(payload.open, payload.close) - payload.low) * ratio;
+  const bodyHeight = Math.max(3, height);
+  const wickColor = isUp ? '#4ade80' : '#f87171'; // Slightly lighter color for wicks to stand out
 
   return (
-    <g className="cursor-crosshair">
-      {/* Wick line - Robust 1.5px for visibility */}
+    <g>
+      {/* Wick line - Sharper 2px for clarity on all zoom levels */}
       <line 
         x1={x + width / 2} 
-        y1={y - highWickHeight} 
+        y1={payload.high > payload.low ? y - (payload.high - Math.max(payload.open, payload.close)) * (bodyHeight / Math.abs(payload.close - payload.open || 1)) : y}
         x2={x + width / 2} 
-        y2={y + bodyHeight + lowWickHeight} 
-        stroke={color} 
-        strokeWidth={1.5}
+        y2={payload.high > payload.low ? y + bodyHeight + (Math.min(payload.open, payload.close) - payload.low) * (bodyHeight / Math.abs(payload.close - payload.open || 1)) : y + bodyHeight}
+        stroke={wickColor} 
+        strokeWidth={2}
         shapeRendering="crispEdges"
       />
-      {/* Body - Clean sharp edges */}
+      {/* Body - Enhanced thickness and dark border for depth */}
       <rect 
         x={x} 
         y={y} 
         width={width} 
         height={bodyHeight} 
         fill={color}
+        stroke="rgba(0,0,0,0.3)"
+        strokeWidth={1}
         shapeRendering="crispEdges"
       />
     </g>
@@ -1274,8 +1272,8 @@ const AdminView = ({
                                 { t: '12:57:44', msg: 'High frequency trade detected: u2 -> EurUsd' },
                                 { t: '12:57:12', msg: 'New Terminal Registration: Sarah Jenkins (Pro)' },
                                 { t: '12:56:01', msg: 'Protocol update: Payment gateways synchronized' },
-                            ].map((log) => (
-                                <div key={`log-${log.t}-${log.msg}`} className="flex gap-2 text-[10px] font-mono leading-tight">
+                            ].map((log, idx) => (
+                                <div key={`admin-log-${idx}-${log.t}`} className="flex gap-2 text-[10px] font-mono leading-tight">
                                     <span className="text-[var(--text-secondary)] opacity-70">[{log.t}]</span>
                                     <span className="text-[var(--text-secondary)] uppercase font-bold tracking-tight">{log.msg}</span>
                                 </div>
@@ -1427,8 +1425,54 @@ const AdminView = ({
                                             </div>
                                         </div>
 
-                                        <button className="w-full py-4 bg-indigo-600 text-white rounded-2xl font-black uppercase tracking-[0.2em] text-xs shadow-2xl shadow-indigo-600/30 active:scale-[0.98] transition-all">
-                                            Commit Account Updates
+                                        <div className="grid grid-cols-2 gap-4">
+                                            <div className="space-y-4">
+                                                <label className="text-[10px] font-black text-zinc-500 uppercase tracking-widest pl-1">Deposit Flow</label>
+                                                <div className="flex gap-2">
+                                                    <input 
+                                                        type="number" 
+                                                        defaultValue="1000"
+                                                        id="deposit-amount"
+                                                        className="flex-1 bg-black border border-zinc-800 rounded-xl px-4 py-3 text-xs font-mono text-white focus:outline-none"
+                                                    />
+                                                    <button 
+                                                        onClick={() => {
+                                                            const amt = parseFloat((document.getElementById('deposit-amount') as HTMLInputElement).value);
+                                                            handleAdjustBalance(viewingUser.id, amt);
+                                                        }}
+                                                        className="px-6 bg-emerald-600 text-white rounded-xl text-[10px] font-black uppercase tracking-widest hover:bg-emerald-500 transition-all font-mono"
+                                                    >
+                                                        CREDIT
+                                                    </button>
+                                                </div>
+                                            </div>
+                                            <div className="space-y-4">
+                                                <label className="text-[10px] font-black text-zinc-500 uppercase tracking-widest pl-1">Debit Flow</label>
+                                                <div className="flex gap-2">
+                                                    <input 
+                                                        type="number" 
+                                                        defaultValue="1000"
+                                                        id="debit-amount"
+                                                        className="flex-1 bg-black border border-zinc-800 rounded-xl px-4 py-3 text-xs font-mono text-white focus:outline-none"
+                                                    />
+                                                    <button 
+                                                        onClick={() => {
+                                                            const amt = parseFloat((document.getElementById('debit-amount') as HTMLInputElement).value);
+                                                            handleAdjustBalance(viewingUser.id, -amt);
+                                                        }}
+                                                        className="px-6 bg-rose-600 text-white rounded-xl text-[10px] font-black uppercase tracking-widest hover:bg-rose-500 transition-all font-mono"
+                                                    >
+                                                        DEBIT
+                                                    </button>
+                                                </div>
+                                            </div>
+                                        </div>
+
+                                        <button 
+                                            onClick={() => setViewingUser(null)}
+                                            className="w-full py-4 bg-indigo-600 text-white rounded-2xl font-black uppercase tracking-[0.2em] text-xs shadow-2xl shadow-indigo-600/30 active:scale-[0.98] transition-all"
+                                        >
+                                            COMMIT & CLOSE
                                         </button>
                                     </div>
                                 </motion.div>
@@ -2293,15 +2337,16 @@ export default function App() {
     setMessages(prev => [...prev, newMessage]);
   };
 
-  const handleAuth = async (data: { name?: string, email: string, isRegistration: boolean, bonusClaimed?: boolean }) => {
-    try {
-        const userData = await ApiService.getMe();
-        setUser({ ...MOCK_USER, ...userData, trades: [] });
-        setIsAuthenticated(true);
-    } catch (err) {
-        console.error("Auth sync failed", err);
-    }
-  };
+    const handleAuth = async (data: { name?: string, email: string, isRegistration: boolean, bonusClaimed?: boolean, user?: any }) => {
+        try {
+            // Use passed user if available, fallback to getMe
+            const userData = data.user || await ApiService.getMe();
+            setUser({ ...MOCK_USER, ...userData, trades: userData.trades || [] });
+            setIsAuthenticated(true);
+        } catch (err) {
+            console.error("Auth sync failed", err);
+        }
+    };
 
   if (!isAuthenticated) {
     return <AuthPage onLogin={handleAuth} />;
