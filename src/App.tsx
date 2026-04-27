@@ -53,7 +53,8 @@ import {
   Line,
   BarChart,
   Bar,
-  ComposedChart
+  ComposedChart,
+  ReferenceLine
 } from 'recharts';
 import { cn } from './lib/utils';
 import { MOCK_ASSETS, MOCK_USER, MOCK_PLATFORM_USERS, MOCK_PLATFORM_STATS, Asset, Trade } from './mockData';
@@ -64,38 +65,36 @@ const CandleStick = (props: any) => {
   if (!payload || height === undefined) return null;
   
   const isUp = payload.close >= payload.open;
-  const color = isUp ? '#22c55e' : '#ef4444'; // High-contrast Emerald/Rose
+  // Professional trading colors (Vibrant Emerald / Bright Rose)
+  const color = isUp ? '#10b981' : '#f43f5e'; 
   
-  // High/Low wick calculation based on body height and price range
   const priceRange = Math.abs(payload.close - payload.open);
-  const candleHeight = Math.max(2, height);
-  const ratio = candleHeight / Math.max(0.00001, priceRange);
+  const bodyHeight = Math.max(2, height);
+  const ratio = bodyHeight / Math.max(0.000001, priceRange);
   
-  const openCloseMax = Math.max(payload.open, payload.close);
-  const openCloseMin = Math.min(payload.open, payload.close);
-  
-  const highPixel = y - (payload.high - openCloseMax) * ratio;
-  const lowPixel = y + height + (openCloseMin - payload.low) * ratio;
+  const highWickHeight = (payload.high - Math.max(payload.open, payload.close)) * ratio;
+  const lowWickHeight = (Math.min(payload.open, payload.close) - payload.low) * ratio;
 
   return (
-    <g>
-      {/* Wick line */}
+    <g className="cursor-crosshair">
+      {/* Wick line - Robust 1.5px for visibility */}
       <line 
         x1={x + width / 2} 
-        y1={highPixel} 
+        y1={y - highWickHeight} 
         x2={x + width / 2} 
-        y2={lowPixel} 
+        y2={y + bodyHeight + lowWickHeight} 
         stroke={color} 
-        strokeWidth={1.5} 
+        strokeWidth={1.5}
+        shapeRendering="crispEdges"
       />
-      {/* Real-time Body */}
+      {/* Body - Clean sharp edges */}
       <rect 
         x={x} 
         y={y} 
         width={width} 
-        height={candleHeight} 
-        fill={color} 
-        rx={0.5}
+        height={bodyHeight} 
+        fill={color}
+        shapeRendering="crispEdges"
       />
     </g>
   );
@@ -449,7 +448,13 @@ const DashboardView = ({ setActiveTab, user, assets, onCloseTrade, onUpdateAvata
 
 // --- View: Markets (Trading Terminal) ---
 
-const MarketsView = ({ selectedAsset, setSelectedAsset, assets, onPlaceTrade }: { selectedAsset: Asset, setSelectedAsset: (a: Asset) => void, assets: Asset[], onPlaceTrade: (type: 'BUY' | 'SELL', lot: number) => void }) => {
+const MarketsView = ({ selectedAsset, setSelectedAsset, assets, onPlaceTrade, user }: { 
+  selectedAsset: Asset, 
+  setSelectedAsset: (a: Asset) => void, 
+  assets: Asset[], 
+  onPlaceTrade: (type: 'BUY' | 'SELL', lot: number) => void,
+  user: typeof MOCK_USER
+}) => {
   const [lot, setLot] = useState('100');
   const [time, setTime] = useState('01:00');
   const [isAssetMenuOpen, setIsAssetMenuOpen] = useState(false);
@@ -646,80 +651,120 @@ const MarketsView = ({ selectedAsset, setSelectedAsset, assets, onPlaceTrade }: 
           </div>
 
           <div 
-            className="w-full h-[450px] relative mt-16 px-4 cursor-crosshair select-none"
+            className="w-full h-[500px] relative mt-16 px-4 cursor-crosshair select-none bg-[#020202] rounded-3xl border border-white/5 overflow-hidden shadow-[0_0_50px_rgba(0,0,0,0.5)]"
             onWheel={handleWheel}
             onMouseDown={handleMouseDown}
             onMouseMove={handleMouseMove}
             onMouseUp={handleMouseUp}
             onMouseLeave={handleMouseUp}
           >
+            {/* Asset Watermark - MT5 Style */}
+            <div className="absolute inset-0 flex items-center justify-center pointer-events-none z-0">
+               <span className="text-[12rem] font-black text-white/[0.02] uppercase tracking-tighter select-none leading-none">
+                  {selectedAsset.symbol.split('/')[0]}
+               </span>
+            </div>
+
+            {/* Technical Header Overlay */}
+            <div className="absolute top-6 left-6 z-10 flex flex-col gap-1 pointer-events-none bg-black/60 p-4 rounded-xl border border-white/10 backdrop-blur-xl">
+               <div className="flex items-center gap-2 overflow-hidden mb-1">
+                  <div className="w-1.5 h-1.5 rounded-full bg-emerald-500 animate-pulse" />
+                  <span className="text-[10px] font-black text-white/70 uppercase tracking-[0.2em]">Live Data Stream</span>
+               </div>
+               <div className="flex gap-6">
+                  <div className="flex flex-col">
+                     <span className="text-[8px] text-zinc-500 uppercase font-black tracking-widest">H</span>
+                     <span className="text-xs font-mono font-bold text-emerald-400">{(lastVisible?.high || 0).toFixed(4)}</span>
+                  </div>
+                  <div className="flex flex-col">
+                     <span className="text-[8px] text-zinc-500 uppercase font-black tracking-widest">L</span>
+                     <span className="text-xs font-mono font-bold text-rose-400">{(lastVisible?.low || 0).toFixed(4)}</span>
+                  </div>
+                  <div className="flex flex-col">
+                     <span className="text-[8px] text-zinc-500 uppercase font-black tracking-widest">C</span>
+                     <span className="text-sm font-mono font-black text-white">{(lastVisible?.close || 0).toFixed(4)}</span>
+                  </div>
+               </div>
+            </div>
+
             {chartType === 'AREA' ? (
               <ResponsiveContainer width="100%" height="100%">
-                <AreaChart data={visibleData}>
+                <AreaChart data={visibleData} margin={{ top: 10, right: 80, left: 0, bottom: 0 }}>
                   <defs>
                     <linearGradient id="tradingGrad" x1="0" y1="0" x2="0" y2="1">
-                      <stop offset="0%" stopColor="#00b97a" stopOpacity={0.4}/>
-                      <stop offset="100%" stopColor="#00b97a" stopOpacity={0}/>
+                      <stop offset="0%" stopColor="#00c176" stopOpacity={0.15}/>
+                      <stop offset="100%" stopColor="#00c176" stopOpacity={0}/>
                     </linearGradient>
                   </defs>
+                  <CartesianGrid stroke="#ffffff0a" vertical={true} strokeDasharray="1 4" horizontal={true} />
                   <XAxis dataKey="time" hide />
-                  <YAxis hide domain={['auto', 'auto']} />
+                  <YAxis 
+                    orientation="right" 
+                    tick={{ fill: '#888', fontSize: 10, fontFamily: 'monospace' }} 
+                    domain={['auto', 'auto']} 
+                    mirror={false} 
+                    tickSize={10} 
+                    axisLine={false} 
+                    width={70}
+                  />
                   <Tooltip 
                     content={({ active, payload }) => {
                       if (active && payload && payload.length) {
                         return (
-                          <div className="bg-[#161b22] border border-zinc-800 p-4 rounded-2xl shadow-3xl">
-                            <span className="text-[10px] font-black text-zinc-500 block uppercase tracking-widest mb-1 font-mono">Index Value</span>
-                            <span className="text-xl font-mono font-bold text-white">{(parseFloat(payload[0].value as string) || 0).toFixed(4)}</span>
+                          <div className="bg-[#0f0f0f] border border-white/5 p-3 shadow-2xl backdrop-blur-xl">
+                             <div className="flex items-center gap-2 mb-1">
+                                <div className="w-1 h-1 rounded-full bg-[#00c176]" />
+                                <span className="text-[8px] font-black text-zinc-500 uppercase tracking-[0.2em]">Live Price</span>
+                             </div>
+                             <span className="text-sm font-mono font-bold text-white">{(parseFloat(payload[0].value as string) || 0).toFixed(5)}</span>
                           </div>
                         );
                       }
                       return null;
                     }}
-                    cursor={{ stroke: '#00b97a', strokeWidth: 2, strokeDasharray: '4 4' }}
+                    cursor={{ stroke: '#ffffff15', strokeWidth: 1 }}
                   />
                   <Area 
                     type="monotone" 
                     dataKey="value" 
-                    stroke="#00b97a" 
+                    stroke="#00c176" 
                     fill="url(#tradingGrad)" 
-                    strokeWidth={4} 
-                    isAnimationActive={true}
-                    animationDuration={1000}
-                    activeDot={{ r: 8, fill: '#fff', stroke: '#00b97a', strokeWidth: 3 }}
+                    strokeWidth={1.5} 
+                    isAnimationActive={false} // Faster updates
+                    activeDot={{ r: 3, fill: '#00c176', stroke: '#fff', strokeWidth: 1.5 }}
                     dot={false}
                   />
                 </AreaChart>
               </ResponsiveContainer>
             ) : (
               <ResponsiveContainer width="100%" height="100%">
-                <ComposedChart data={visibleData}>
+                <ComposedChart data={visibleData} margin={{ top: 10, right: 80, left: 0, bottom: 0 }}>
+                  <CartesianGrid stroke="#ffffff0a" vertical={true} horizontal={true} strokeDasharray="1 4" />
                   <XAxis dataKey="time" hide />
-                  <YAxis hide domain={['auto', 'auto']} />
+                  <YAxis 
+                    orientation="right" 
+                    tick={{ fill: '#888', fontSize: 10, fontFamily: 'monospace' }} 
+                    domain={['auto', 'auto']} 
+                    mirror={false} 
+                    tickSize={10} 
+                    axisLine={false} 
+                    width={70}
+                  />
                   <Tooltip 
                     content={({ active, payload }) => {
                       if (active && payload && payload.length) {
-                        const data = payload[0].payload;
+                        const d = payload[0].payload;
                         return (
-                          <div className="bg-[#161b22] border border-zinc-800 p-5 rounded-2xl shadow-3xl">
-                            <span className="text-[10px] font-black text-zinc-500 block uppercase tracking-widest mb-3 font-mono">Market Intel</span>
-                            <div className="grid grid-cols-2 gap-x-6 gap-y-2">
-                               <div className="flex flex-col">
-                                  <span className="text-[8px] text-zinc-500 uppercase font-black">Open</span>
-                                  <span className="text-sm font-mono font-bold text-white">{(data.open || 0).toFixed(4)}</span>
-                               </div>
-                               <div className="flex flex-col">
-                                  <span className="text-[8px] text-zinc-500 uppercase font-black">Close</span>
-                                  <span className="text-sm font-mono font-bold text-white">{(data.close || 0).toFixed(4)}</span>
-                               </div>
-                               <div className="flex flex-col">
-                                  <span className="text-[8px] text-zinc-500 uppercase font-black">High</span>
-                                  <span className="text-sm font-mono font-bold text-emerald-500">{(data.high || 0).toFixed(4)}</span>
-                               </div>
-                               <div className="flex flex-col">
-                                  <span className="text-[8px] text-zinc-500 uppercase font-black">Low</span>
-                                  <span className="text-sm font-mono font-bold text-rose-500">{(data.low || 0).toFixed(4)}</span>
-                               </div>
+                          <div className="bg-[#0f0f0f] border border-white/5 p-4 shadow-2xl backdrop-blur-xl">
+                            <div className="grid grid-cols-2 gap-x-4 gap-y-1">
+                               <span className="text-[7px] text-zinc-600 font-black uppercase">O</span>
+                               <span className="text-[9px] font-mono text-zinc-200 text-right">{d.open.toFixed(5)}</span>
+                               <span className="text-[7px] text-zinc-600 font-black uppercase">H</span>
+                               <span className="text-[9px] font-mono text-emerald-500 text-right">{d.high.toFixed(5)}</span>
+                               <span className="text-[7px] text-zinc-600 font-black uppercase">L</span>
+                               <span className="text-[9px] font-mono text-rose-500 text-right">{d.low.toFixed(5)}</span>
+                               <span className="text-[7px] text-zinc-600 font-black uppercase">C</span>
+                               <span className="text-[9px] font-mono text-zinc-200 text-right">{d.close.toFixed(5)}</span>
                             </div>
                           </div>
                         );
@@ -731,24 +776,57 @@ const MarketsView = ({ selectedAsset, setSelectedAsset, assets, onPlaceTrade }: 
                   <Bar 
                     dataKey="ohlc" 
                     shape={<CandleStick />} 
-                    isAnimationActive={true}
-                    animationDuration={800}
+                    isAnimationActive={false}
                   />
-                  {/* SMA (Simple Moving Average) Trend Line */}
                   <Line 
                     type="monotone" 
                     dataKey="value" 
-                    stroke="#6366f1" 
-                    strokeWidth={2} 
+                    stroke="#4f46e5" 
+                    strokeWidth={1} 
                     dot={false} 
-                    strokeDasharray="5 5"
+                    strokeDasharray="2 2"
                     opacity={0.3}
+                  />
+                  {/* Position Indicators */}
+                  {user.trades.filter(t => t.status === 'OPEN' && t.symbol === selectedAsset.symbol).map(trade => (
+                    <ReferenceLine 
+                      key={trade.id}
+                      y={trade.openPrice} 
+                      stroke={trade.type === 'BUY' ? '#10b981' : '#f43f5e'} 
+                      strokeWidth={1}
+                      strokeDasharray="4 2"
+                      label={{ 
+                        value: `${trade.type} POS`, 
+                        position: 'right', 
+                        fill: trade.type === 'BUY' ? '#10b981' : '#f43f5e',
+                        fontSize: 8,
+                        fontFamily: 'monospace',
+                        fontWeight: 'black',
+                        className: 'uppercase'
+                      }} 
+                    />
+                  ))}
+                  {/* Current Market Price Tracker */}
+                  <ReferenceLine 
+                     y={selectedAsset.price} 
+                     stroke="#00c176" 
+                     strokeWidth={1}
+                     strokeDasharray="3 3"
+                     label={{
+                        value: selectedAsset.price.toFixed(4),
+                        position: 'right',
+                        fill: '#00c176',
+                        fontSize: 10,
+                        fontWeight: 'black',
+                        fontFamily: 'monospace',
+                        dy: -2,
+                        dx: 5
+                     }}
                   />
                 </ComposedChart>
               </ResponsiveContainer>
             )}
-            
-          </div>
+          </div>  
         </div>
 
         {/* Execution Terminal (Focused & Urgent) */}
@@ -1169,8 +1247,8 @@ const AdminView = ({
                             { label: 'Network Operators', value: platformUsers.length, icon: Activity, color: 'text-emerald-400' },
                             { label: 'Core System Load', value: MOCK_PLATFORM_STATS.serverLoad, icon: Zap, color: 'text-amber-400' },
                             { label: 'Daily Revenue Pool', value: MOCK_PLATFORM_STATS.revenue24h, icon: Banknote, color: 'text-rose-400' },
-                        ].map((stat, i) => (
-                            <div key={i} className="glass-panel p-5 rounded-3xl flex flex-col gap-3">
+                        ].map((stat) => (
+                            <div key={`stat-${stat.label}`} className="glass-panel p-5 rounded-3xl flex flex-col gap-3">
                                 <div className="flex items-center justify-between">
                                     <stat.icon className={cn("w-5 h-5", stat.color)} />
                                     <span className="text-[8px] font-black text-[var(--text-secondary)] uppercase tracking-widest">Global Telemetry</span>
@@ -1196,8 +1274,8 @@ const AdminView = ({
                                 { t: '12:57:44', msg: 'High frequency trade detected: u2 -> EurUsd' },
                                 { t: '12:57:12', msg: 'New Terminal Registration: Sarah Jenkins (Pro)' },
                                 { t: '12:56:01', msg: 'Protocol update: Payment gateways synchronized' },
-                            ].map((log, i) => (
-                                <div key={i} className="flex gap-2 text-[10px] font-mono leading-tight">
+                            ].map((log) => (
+                                <div key={`log-${log.t}-${log.msg}`} className="flex gap-2 text-[10px] font-mono leading-tight">
                                     <span className="text-[var(--text-secondary)] opacity-70">[{log.t}]</span>
                                     <span className="text-[var(--text-secondary)] uppercase font-bold tracking-tight">{log.msg}</span>
                                 </div>
@@ -1385,7 +1463,7 @@ const AdminView = ({
                                     { id: 'DUMP', label: 'Force Dump', icon: TrendingDown, color: 'hover:bg-rose-600' }
                                 ].map((t) => (
                                     <button 
-                                        key={t.id}
+                                        key={`trend-${asset.id}-${t.id}`}
                                         onClick={() => handleSetTrend(asset.id, t.id as any)}
                                         className={cn(
                                             "flex items-center gap-2 px-3 py-3 rounded-2xl border transition-all text-left",
@@ -2232,7 +2310,7 @@ export default function App() {
   const renderView = () => {
     switch (activeTab) {
       case 'dashboard': return <DashboardView setActiveTab={setActiveTab} user={user} assets={assets} onCloseTrade={handleCloseTrade} onUpdateAvatar={handleUpdateAvatar} />;
-      case 'markets': return <MarketsView selectedAsset={selectedAsset} setSelectedAsset={(a) => setSelectedAssetId(a.id)} assets={assets} onPlaceTrade={handlePlaceTrade} />;
+      case 'markets': return <MarketsView selectedAsset={selectedAsset} setSelectedAsset={(a) => setSelectedAssetId(a.id)} assets={assets} onPlaceTrade={handlePlaceTrade} user={user} />;
       case 'news': return <NewsView />;
       case 'history': return <HistoryView user={user} />;
       case 'admin': return (
