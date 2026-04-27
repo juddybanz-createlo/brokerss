@@ -45,6 +45,21 @@ export class ApiService {
     return res.json();
   }
 
+  static async getPaymentSettings() {
+    const res = await fetch(`${API_BASE}/payment-settings`);
+    return res.json();
+  }
+
+  static async updatePaymentSettings(settings: any) {
+    const res = await fetch(`${API_BASE}/admin/update-payment-settings`, {
+      method: "POST",
+      headers: this.headers,
+      body: JSON.stringify(settings),
+    });
+    if (!res.ok) throw new Error("Update rejected");
+    return res.json();
+  }
+
   static async getMe() {
     const res = await fetch(`${API_BASE}/user/me`, { headers: this.headers });
     if (!res.ok) throw new Error("Session expired");

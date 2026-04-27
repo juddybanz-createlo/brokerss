@@ -34,6 +34,23 @@ async function startServer() {
     { id: 'btcusd', name: 'Bitcoin', symbol: 'BTC/USD', price: 64250.00, change24h: -2.45, sparkline: [], trend: 'RANDOM' },
   ];
 
+  let paymentSettings = {
+    cryptoAddresses: [
+      { id: '1', label: 'BTC Settlement Ledger', value: 'bc1qxy2kgdygjrsqtzq2n0yrf2493p83kkfjhx0wlh', type: 'BTC' },
+      { id: '2', label: 'ETH Settlement Ledger', value: '0x71C7656EC7ab88b098defB751B7401B5f6d8976F', type: 'ETH' }
+    ],
+    eWallets: [
+      { id: 'e1', label: 'PayPal Operational', value: 'payments@apex.financial', type: 'PAYPAL' },
+      { id: 'e2', label: 'Skrill Global', value: 'skrill-id-99281', type: 'SKRILL' }
+    ],
+    bankDetails: {
+      bankName: 'Apex Capital Reserve',
+      accountNumber: 'APX-7700-4421-001',
+      swiftCode: 'APXGB2L',
+      holderName: 'Apex Financial Group'
+    }
+  };
+
   // Initialize sparklines with proper OHLC data for candlesticks
   serverAssets = serverAssets.map(a => {
     let currentPrice = a.price;
@@ -77,6 +94,15 @@ async function startServer() {
     }
     next();
   };
+
+  app.get("/api/payment-settings", (req, res) => {
+    res.json(paymentSettings);
+  });
+
+  app.post("/api/admin/update-payment-settings", authMiddleware, adminMiddleware, (req, res) => {
+    paymentSettings = req.body;
+    res.json(paymentSettings);
+  });
 
   app.post("/api/auth/register", (req, res) => {
     const { name, email, phone, country } = req.body;
@@ -178,17 +204,18 @@ async function startServer() {
         
         const open = asset.price;
         let bias = 0;
-        if (asset.trend === 'PUMP') bias = defaultVolatility * 2;
-        if (asset.trend === 'DUMP') bias = -defaultVolatility * 2;
-        if (asset.trend === 'STABLE') bias = 0;
+        if (asset.trend === 'PUMP') bias = defaultVolatility * 8; // Much stronger bias
+        if (asset.trend === 'DUMP') bias = -defaultVolatility * 8;
+        if (asset.trend === 'STABLE') bias = (Math.random() - 0.5) * (defaultVolatility * 0.1); 
 
         const changePercent = ((Math.random() - 0.5) * defaultVolatility) + bias;
         const close = open * (1 + changePercent);
         
         // Generate realistic High/Low
         const range = Math.abs(close - open);
-        const high = Math.max(open, close) + (Math.random() * range * 0.5);
-        const low = Math.min(open, close) - (Math.random() * range * 0.5);
+        const wickMultiplier = isVolatile ? 3 : 1.5;
+        const high = Math.max(open, close) + (Math.random() * range * wickMultiplier);
+        const low = Math.min(open, close) - (Math.random() * range * wickMultiplier);
 
         const newSparkline = [...asset.sparkline.slice(1), { 
           time: new Date().toLocaleTimeString([], { hour: '2-digit', minute: '2-digit', second: '2-digit' }), 
